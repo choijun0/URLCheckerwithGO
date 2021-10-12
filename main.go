@@ -1,31 +1,57 @@
 package main
 
 import (
+  "errors"
   "fmt"
-  "time"
+  "net/http"
 )
 
+var (
+  errorRequestFailed = errors.New("Http request is failed"); 
+)
+
+type RequestCheck struct{
+  url string
+  response string
+}
 
 func main() {
-  channel := make(chan string); //type (if type is chan what is the datatype you bring to channel)
-  members := [5]string{"jun", "young", "choi", "chang", "hoon"}
-  for _, member := range members{
-    go count(member, 3, channel);
+  urls := []string{
+    "https://www.airbnb.com/",
+		"https://www.google.com/",
+		"https://www.amazon.com/",
+		"https://www.reddit.com/",
+		"https://www.google.com/",
+		"https://soundcloud.com/",
+		"https://www.facebook.com/",
+		"https://www.instagram.com/",
+		"https://academy.nomadcoders.co/",
   }
-  //watch receive , 현재실행중인 goroutine에서 값을 받기를 기다리고있는 상태(값이 전달되기 전에 main함수는 종료되지 않는다. blcoking operation)
-  //goroutine이 몇개인지 알고있다 따라서 channel이받아야할 값은 goroutine의 개수를 넘지 못한다.
-  //Activate receivers
-  for i:=0; i<len(members); i++{
-    fmt.Println(<- channel);  //blocking operation == waiting
-    //값을 받을때가지 진행x first in first
+  channel := make(chan RequestCheck)
+  results := map[string]string{}
+
+  for _, url := range urls {
+    fmt.Println("Checking " ,url)
+    go hitUrl(url, channel);
+  }
+
+  //Get Result
+  for i:=0;i<len(urls); i++{
+    result := <-channel
+    results[result.url] = result.response;
+  }
+
+  //Print
+  for url, response := range results {
+    fmt.Println(url, response);
   }
 }
 
-//func
-func count(name string, howmany int, channel chan string){
-  for i:=0;i<howmany;i++{
-    fmt.Println(name, i);
-    time.Sleep(time.Second);
+func hitUrl(url string, channel chan RequestCheck) {
+  response, err := http.Get(url)
+  if err != nil || response.StatusCode >= 400 {
+    channel <- RequestCheck{url:url, response : "FAILED"}
+  } else{
+    channel <- RequestCheck{url:url, response : "OK"}
   }
-  channel <- name + " is Finished!";
 }
