@@ -1,56 +1,31 @@
 package main
 
 import (
-  "errors"
   "fmt"
-  "net/http"
+  "time"
 )
 
-var (
-  errorRequestFailed = errors.New("Http request is failed"); 
-)
 
 func main() {
-  urls := []string{
-    "https://www.airbnb.com/",
-		"https://www.google.com/",
-		"https://www.amazon.com/",
-		"https://www.reddit.com/",
-		"https://www.google.com/",
-		"https://soundcloud.com/",
-		"https://www.facebook.com/",
-		"https://www.instagram.com/",
-		"https://academy.nomadcoders.co/",
+  channel := make(chan string); //type (if type is chan what is the datatype you bring to channel)
+  members := [5]string{"jun", "young", "choi", "chang", "hoon"}
+  for _, member := range members{
+    go count(member, 3, channel);
   }
-
-  //Make empty map
-  //var results map[string]string 이렇게 초기화하면 map값이 nil이되 제기능X
-  results := map[string]string{}
-
-  for _, url := range urls {
-    fmt.Println("Checking " ,url)
-    err := hitUrl(url);
-    result := "SUCCESS";
-    if err == nil {
-      results[url] = result;
-    } else if err == errorRequestFailed {
-      result = "FAILED"
-      results[url] = result;
-    }
-  }
-
-  //Print results
-  for url, result := range results{
-    fmt.Println(url, result);
+  //watch receive , 현재실행중인 goroutine에서 값을 받기를 기다리고있는 상태(값이 전달되기 전에 main함수는 종료되지 않는다. blcoking operation)
+  //goroutine이 몇개인지 알고있다 따라서 channel이받아야할 값은 goroutine의 개수를 넘지 못한다.
+  //Activate receivers
+  for i:=0; i<len(members); i++{
+    fmt.Println(<- channel);  //blocking operation == waiting
+    //값을 받을때가지 진행x first in first
   }
 }
 
-func hitUrl(url string) error{
-  response, err := http.Get(url)
-  if err != nil || response.StatusCode >= 400 {
-    fmt.Println(response.StatusCode);
-    return errorRequestFailed
-  } else{
-    return nil
+//func
+func count(name string, howmany int, channel chan string){
+  for i:=0;i<howmany;i++{
+    fmt.Println(name, i);
+    time.Sleep(time.Second);
   }
+  channel <- name + " is Finished!";
 }
